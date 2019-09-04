@@ -1,0 +1,128 @@
+Option Explicit
+
+Public RawIP As String
+Public IPBinary As String
+Public IPDecimal As LongLong
+Public SubnetMask As Integer
+Public NetworkAddress As String
+Public BroadcastAddress As String
+Public NetworkBinary As String
+Public BroadcastBinary As String
+Public NetworkDecimal As LongLong
+Public BroadcastDecimal As LongLong
+
+Public Sub Initialise(ByVal IPAddress As String)
+
+    'Initialises IP and deals with raw ipaddress, subnet mask, network and broadcast addresses
+    IPAddress = VBA.Trim(IPAddress)
+
+    Dim SubnetSplit() As String
+    SubnetSplit = Split(IPAddress, "/")
+    If UBound(SubnetSplit) = 0 Then
+        RawIP = IPAddress
+        SubnetMask = 32
+    Else
+        RawIP = SubnetSplit(0)
+        SubnetMask = CInt(SubnetSplit(1))
+    End If
+
+    'getting IP address as binary
+    IPBinary = IPToBinary(RawIP)
+
+    'getting IP address as decimal
+    IPDecimal = BinaryToDecimal(IPBinary)
+
+    'getting network and broadcast binaries
+    Call GetNetworkAndBroadcastBinaries
+
+    'getting network and broadcast IPs
+    NetworkAddress = BinaryToIPAddress(NetworkBinary)
+    BroadcastAddress = BinaryToIPAddress(BroadcastBinary)
+
+    'getting network and broadcast decimals
+    NetworkDecimal = BinaryToDecimal(NetworkBinary)
+    BroadcastDecimal = BinaryToDecimal(BroadcastBinary)
+
+End Sub
+
+Private Function BinaryToIPAddress(ByVal BinaryString As String) As String
+    Dim z As Integer
+    Dim BinaryExcerpt As String
+    Dim OctetPart As String
+    Dim TotalIP As String
+    TotalIP = ""
+
+    For z = 0 To 3
+        BinaryExcerpt = Mid(BinaryString, 1 + (z * 8), 8)
+        OctetPart = CStr(BinaryToDecimal(BinaryExcerpt))
+        TotalIP = TotalIP & OctetPart
+        If z < 3 Then
+            TotalIP = TotalIP & "."
+        End If
+    Next z
+
+    BinaryToIPAddress = TotalIP
+
+End Function
+
+Private Function IPToBinary(ByVal IPAddress As String) As String
+
+    Dim i As Integer
+    Dim z As Integer
+    Dim CurrentAmount As Integer
+    Dim IPSplit() As String
+    Dim BinaryString As String
+    BinaryString = ""
+    Dim CurrentPowerValue As Integer
+
+    IPSplit = Split(IPAddress, ".")
+    For z = LBound(IPSplit) To UBound(IPSplit)
+        CurrentAmount = CInt(IPSplit(z))
+        For i = 7 To 0 Step -1
+            CurrentPowerValue = Application.WorksheetFunction.Power(2, i)
+            If CurrentAmount >= CurrentPowerValue Then
+                BinaryString = BinaryString & "1"
+                CurrentAmount = CurrentAmount - CurrentPowerValue
+            Else
+                BinaryString = BinaryString & "0"
+            End If
+        Next i
+    Next z
+
+    IPToBinary = BinaryString
+
+End Function
+
+Private Function BinaryToDecimal(ByVal BinaryString As String) As LongLong
+
+    Dim z As Integer
+    Dim DecimalEquivalent As LongLong
+    DecimalEquivalent = 0
+
+    For z = Len(BinaryString) - 1 To 0 Step -1
+        If Mid(BinaryString, Len(BinaryString) - z, 1) = "1" Then
+            DecimalEquivalent = DecimalEquivalent + Application.WorksheetFunction.Power(2, z)
+        End If
+    Next z
+
+    BinaryToDecimal = DecimalEquivalent
+
+End Function
+
+Private Sub GetNetworkAndBroadcastBinaries()
+
+    Dim z As Integer
+    Dim SubnetAdj As Integer
+    SubnetAdj = 32 - CInt(SubnetMask)
+
+    NetworkBinary = Mid(IPBinary, 1, 32 - SubnetAdj)
+    For z = 1 To SubnetAdj
+        NetworkBinary = NetworkBinary & "0"
+    Next z
+
+    BroadcastBinary = Mid(IPBinary, 1, 32 - SubnetAdj)
+    For z = 1 To SubnetAdj
+        BroadcastBinary = BroadcastBinary & "1"
+    Next z
+
+End Sub
