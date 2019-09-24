@@ -72,7 +72,7 @@ def main():
 
 	while count < n_pings:
 
-		chunk_size = min(MAX_CHUNK_SIZE, n_pings)
+		chunk_size = min(MAX_CHUNK_SIZE, n_pings - count)
 		ping_chunk = Ping.ping_list[count: count + chunk_size]
 
 		print('{0} / {1} processed - now beginning next {2}!'.format(count, n_pings, chunk_size))
